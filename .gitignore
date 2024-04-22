@@ -130,3 +130,6 @@ dist/
 
 # Ignore package-lock
 package-lock.json
+
+# Python stuff
+.venv
