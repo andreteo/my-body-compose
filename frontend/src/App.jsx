@@ -40,6 +40,8 @@ function App() {
         setUserProfile,
         isSignedIn,
         setIsSignedIn,
+        showLogin,
+        setShowLogin
       }}
     >
       <BrowserRouter>
@@ -47,7 +49,6 @@ function App() {
           <ThemeProvider theme={theme}>
             <CssBaseline style={{ backgroundColor: theme.palette.background.default }}>
               <Navbar></Navbar>
-              <Login />
               <Routes>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/calories" element={<Calories />} />

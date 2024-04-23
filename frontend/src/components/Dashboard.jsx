@@ -1,10 +1,13 @@
 import { useTheme } from '@emotion/react';
 import { Paper, Box, Container, Grid, IconButton, Tooltip } from '@mui/material';
-import React from 'react';
+import React, { useContext } from 'react';
 import BluetoothIcon from '@mui/icons-material/Bluetooth';
+import UserContext from '../context/user'
+
 
 const Dashboard = () => {
     const theme = useTheme();
+    const userCtx = useContext(UserContext);
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
