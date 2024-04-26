@@ -29,7 +29,8 @@ const SignUp = (props) => {
         "height": "",
         "weight": "",
         "phone_number": "",
-        "profile_photo": ""
+        "profile_photo": "",
+        "bio": ""
     });
     const [upload, setUpload] = useState(true);
     const [photoUpload, setPhotoUpload] = useState(null);
@@ -61,7 +62,8 @@ const SignUp = (props) => {
             "date_of_birth": generateRandomDateOfBirth(),
             "height": generateRandomHeight(),
             "weight": generateRandomWeight(),
-            "phone_number": faker.phone.number()
+            "phone_number": faker.phone.number(),
+            "bio": "Placeholder"
         })
     }
 
@@ -72,6 +74,37 @@ const SignUp = (props) => {
             [name]: value
         }));
     };
+
+    // const handlePhotoUpload = async () => {
+    //     const dataUrl = userRegistrationState.profile_photo;
+    //     const blob = await (await fetch(dataUrl)).blob();
+    //     const file = new File([blob], "profile_photo.png", { type: "image/png" });
+
+    //     const formData = new FormData();
+    //     formData.append('profile_photo', file, file.name);
+
+    //     try {
+    //         const res = await fetch(
+    //             import.meta.env.VITE_BACKEND_SERVER + "/auth/register",
+    //             {
+    //                 method: "POST",
+    //                 body: formData,
+    //             }
+    //         );
+    //     } catch (error) {
+    //         console.error('Error uploading image', error);
+    //     }
+
+    //     // const temp = { ...userRegistrationState };
+    //     // temp.profile_photo = photoUpload;
+    //     // setUserRegistrationState(temp);
+    // }
+
+    // useEffect(() => {
+    //     if (photoUpload) {
+    //         handlePhotoUpload();
+    //     }
+    // }, [photoUpload])
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -108,12 +141,6 @@ const SignUp = (props) => {
         }
     };
 
-    useEffect(() => {
-        if (photoUpload) {
-            handleInputChange({ target: { name: 'profile_photo', value: photoUpload } })
-        }
-    }, [photoUpload])
-
 
     return (
         <>
@@ -125,12 +152,15 @@ const SignUp = (props) => {
                 setSnackbarOpen={props.snackbarOperations.setSnackbarOpen}
                 setSnackbarMessage={props.snackbarOperations.setSnackbarMessage}>
             </SnackbarMessage>
+
             <Avatar sx={{ m: 1, marginTop: 6, bgcolor: theme.palette.primary.avatar, color: '#000' }}>
                 <AppRegistrationIcon />
             </Avatar>
+
             <Typography component="h1" variant="h5">
                 Sign up
             </Typography>
+
             <Button
                 type="submit"
                 variant="contained"
@@ -143,9 +173,27 @@ const SignUp = (props) => {
 
             <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, display: "flex", width: 500, flexDirection: "column" }}>
                 {Object.keys(userRegistrationState).map((item, idx) => {
-                    if (item === 'gender' || item === 'date_of_birth' || item === 'profile_photo') {
+                    if (item === 'gender' || item === 'date_of_birth' || item === 'profile_photo' || item === 'password' || item === 'bio') {
                         const itemText = item.includes("_") ? item.replaceAll("_", " ") : item;
                         switch (item) {
+                            case 'password':
+                                return (
+                                    <FormControl key={"formControl" + idx} margin="normal">
+                                        <TextField
+                                            margin="normal"
+                                            required
+                                            fullWidth
+                                            variant='standard'
+                                            name="password"
+                                            label="Password"
+                                            type="password"
+                                            id="password"
+                                            color="success"
+                                            onChange={handleInputChange}
+                                            autoComplete="current-password"
+                                        />
+                                    </FormControl>
+                                )
                             case 'gender':
                                 return (
                                     <FormControl key={"formControl" + idx} margin="normal">
@@ -179,6 +227,22 @@ const SignUp = (props) => {
                                             }} />
                                     </LocalizationProvider>
                                 );
+                            case 'bio':
+                                return (
+                                    <FormControl key={"formControl" + idx} margin="normal">
+                                        <TextField
+                                            margin="normal"
+                                            required
+                                            fullWidth
+                                            // variant='standard'
+                                            name="bio"
+                                            label="Write something about yourself :)"
+                                            id="bio"
+                                            color="success"
+                                            onChange={handleInputChange}
+                                        />
+                                    </FormControl>
+                                )
                             default:
                                 return null;
                         }
@@ -203,7 +267,7 @@ const SignUp = (props) => {
                     }
                 })}
 
-                <ImageUpload upload={upload} setUpload={setUpload} setPhotoUpload={setPhotoUpload}></ImageUpload>
+                <ImageUpload upload={upload} setUpload={setUpload} setPhotoUpload={setPhotoUpload} setUserRegistrationState={setUserRegistrationState} photoKey={"profile_photo"}></ImageUpload>
 
                 <Button
                     type="submit"

@@ -3,6 +3,7 @@ import { Paper, Box, Container, Grid, IconButton, Tooltip } from '@mui/material'
 import React, { useContext } from 'react';
 import BluetoothIcon from '@mui/icons-material/Bluetooth';
 import UserContext from '../context/user'
+import UserProfile from './UserProfile';
 
 
 const Dashboard = () => {
@@ -12,8 +13,7 @@ const Dashboard = () => {
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Grid container spacing={3}>
-                {/* Chart */}
-
+                {/* Daily Stuff */}
                 <Grid item xs={12} md={8} lg={9}>
                     <Paper
                         sx={{
@@ -24,13 +24,13 @@ const Dashboard = () => {
                             backgroundColor: theme.palette.background.paper
                         }}
                     >
-                        test
-                        {/* <IconButton onClick={handleBluetoothButton} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+
+                        <IconButton onClick={() => { console.log('bluetooth') }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                             <BluetoothIcon />
-                        </IconButton> */}
+                        </IconButton>
                     </Paper>
                 </Grid>
-                {/* Recent Deposits */}
+                {/* Before/After Photo */}
                 <Grid item xs={12} md={4} lg={3}>
                     <Paper
                         sx={{
@@ -43,7 +43,7 @@ const Dashboard = () => {
                         test
                     </Paper>
                 </Grid>
-                {/* Recent Orders */}
+                {/* Trends */}
                 <Grid item xs={12}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                         test

@@ -12,8 +12,26 @@ const Login = (props) => {
     const passwordRef = useRef();
     const fetchData = useFetch();
 
-    const handleLogin = () => {
-        console.log("login")
+    const handleLogin = async (event) => {
+        event.preventDefault();
+
+        const outgoingData = {
+            "username": usernameRef.current.value,
+            "password": passwordRef.current.value
+        }
+
+        const res = await fetchData("/auth/login", "POST", outgoingData);
+
+        if (!res.ok) {
+            alert(`Login failed!: ${JSON.stringify(res.data)}`);
+        } else {
+            const data = res.data;
+            usernameRef.current.value = "";
+            passwordRef.current.value = "";
+            userCtx.setShowLogin(false);
+            userCtx.setAccessToken(data.token)
+            userCtx.setUserProfile(data.user_profile);
+        }
     }
 
     return (
@@ -24,7 +42,7 @@ const Login = (props) => {
             <Typography component="h1" variant="h5">
                 Sign in
             </Typography>
-            <Box component="form" noValidate onSubmit={handleLogin} sx={{ mt: 1 }}>
+            <Box component="form" noValidate sx={{ mt: 1 }}>
                 <TextField
                     margin="normal"
                     required
@@ -57,6 +75,7 @@ const Login = (props) => {
                     variant="contained"
                     color='success'
                     sx={{ mt: 3, mb: 2 }}
+                    onClick={handleLogin}
                 >
                     Sign In
                 </Button>

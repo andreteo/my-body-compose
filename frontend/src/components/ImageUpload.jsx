@@ -25,19 +25,14 @@ const ImageUpload = (props) => {
 
         const reader = new FileReader();
 
-        reader.onload = () => {
-            // const fileData = reader.result;
-            // const blob = new Blob([fileData], { type: file.type });
-            const fileData = new Uint8Array(reader.result);
-
-            props.setPhotoUpload(fileData);
-            // Now you can upload the blob to your server
-            // Example:
-            // uploadBlob(blob);
-            // Make sure to implement the uploadBlob function to handle the upload to your server
+        reader.onloadend = () => {
+            const base64String = reader.result.replace(/^data:.+;base64,/, '');
+            props.setUserRegistrationState(prevState => ({
+                ...prevState,
+                [props.photoKey]: base64String
+            }));
         };
-
-        reader.readAsArrayBuffer(file);
+        reader.readAsDataURL(file);
     };
 
 
@@ -81,7 +76,7 @@ const ImageUpload = (props) => {
                 />
             )}
 
-            {!props.upload && (
+            {/* {!props.upload && (
                 <Grid container gap={2} sx={{ margin: "1rem" }}>
                     <Button
                         xs={6}
@@ -103,7 +98,7 @@ const ImageUpload = (props) => {
                         Cancel
                     </Button>
                 </Grid>
-            )}
+            )} */}
         </Box>
 
     );
