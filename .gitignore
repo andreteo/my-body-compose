@@ -133,3 +133,4 @@ package-lock.json
 
 # Python stuff
 .venv
+backend/tables/__pycache__/table.cpython-311.pyc
