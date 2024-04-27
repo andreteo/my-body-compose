@@ -20,6 +20,12 @@ export const lightTheme = createTheme({
             disabled: 'rgba(0, 0, 0, 0.38)',
             dark: '#000'
         },
+        visualisation: {
+            water: '#7C96AB',
+            marker_background: '#CCCCCC',
+            food: '#A5DD9B',
+            measurement: '#FBBBC3'
+        }
     },
 });
 
@@ -42,6 +48,12 @@ export const darkTheme = createTheme({
             secondary: 'rgba(255, 255, 255, 0.7)',
             disabled: 'rgba(255, 255, 255, 0.5)',
             dark: '#000'
+        },
+        visualisation: {
+            water: '#ADD8E6',
+            marker_background: '#CCCCCC',
+            food: '#A5DD9B',
+            measurement: '#FBBBC3'
         }
     },
 });
