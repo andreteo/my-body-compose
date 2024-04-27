@@ -9,6 +9,7 @@ import BodyComposition from "./components/BodyComposition";
 import Navbar from "./components/Navbar";
 import UserContext from "./context/user";
 import UserProfile from "./components/UserProfile";
+import Workout from "./components/Workout";
 
 export const ThemeContext = React.createContext();
 
@@ -70,6 +71,7 @@ function App() {
                   <>
                     <Route path="/calories" element={<Calories />} />
                     <Route path="/composition" element={<BodyComposition />} />
+                    <Route path="/workout" element={<Workout />} />
                     <Route path="/profile" element={<UserProfile snackbarOperations={snackbarOperations} />} />
                   </>
                 )}
