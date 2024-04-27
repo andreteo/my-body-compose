@@ -1,10 +1,12 @@
 import os, bcrypt, psycopg2, pickle, json
+from datetime import datetime, date, timedelta
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, load_only
 from dotenv import load_dotenv
 from pathlib import Path
-from tables.table import User, Profile
+from tables.table import *
 
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
@@ -66,25 +68,41 @@ def home():
 def register():
     if request.is_json:
         data = request.json
-        print(data)
         hashed_password = bcrypt.hashpw(
             data["password"].encode("utf-8"), bcrypt.gensalt()
         )
 
-        new_profile = Profile(
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            gender=data["gender"],
-            date_of_birth=data["date_of_birth"],
-            height=data["height"],
-            weight=data["weight"],
-            phone_number=data["phone_number"],
-            profile_photo=data["profile_photo"],
-            bio=data["bio"],
-        )
-
         try:
+            new_profile = Profile(
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                gender=data["gender"],
+                date_of_birth=data["date_of_birth"],
+                height=data["height"],
+                weight=data["weight"],
+                phone_number=data["phone_number"],
+            )
+
+            for k in [
+                "profile_photo",
+                "before_photo",
+                "after_photo",
+                "bio",
+                "is_admin",
+            ]:
+                if k in data:
+                    setattr(new_profile, k, data[k])
+
             session.add(new_profile)
+            session.commit()
+
+            new_goal = Goal(
+                calorie_goal=data["calorie_goal"],
+                water_goal=data["water_goal"],
+                weight_goal=data["weight_goal"],
+            )
+
+            session.add(new_goal)
             session.commit()
 
             new_user = User(
@@ -92,6 +110,7 @@ def register():
                 password=hashed_password.decode(),
                 email=data["email"],
                 profile_id=new_profile.profile_id,
+                goal_id=new_goal.goal_id,
             )
 
             session.add(new_user)
@@ -108,7 +127,6 @@ def register():
                 ),
                 500,
             )
-
     else:
         return make_response(
             jsonify({"ok": False, "error": "Request must contain JSON data"}),
@@ -205,6 +223,231 @@ def edit_user_profile():
             else:
                 response_data = {"ok": False, "message": "User profile not found"}
                 return make_response(jsonify(response_data), 404)
+        else:
+            response_data = {"ok": False, "message": "User not found"}
+            return make_response(jsonify(response_data), 404)
+    else:
+        response_data = {"ok": False, "error": "Request must contain JSON data"}
+        return make_response(jsonify(response_data), 400)
+
+
+@app.route("/user/profile/photos", methods=["GET"])
+@jwt_required()
+def get_user_profile_images():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            user = session.query(User).filter_by(username=user_found).first()
+            user_profile = (
+                session.query(Profile)
+                .options(
+                    load_only(
+                        Profile.profile_photo, Profile.before_photo, Profile.after_photo
+                    )
+                )
+                .filter_by(profile_id=user.profile_id)
+                .first()
+            )
+
+            if user_profile:
+                profile_dict = {
+                    "before_photo": user_profile.before_photo,
+                    "after_photo": user_profile.after_photo,
+                }
+
+                response_data = {"ok": True, "user_photos": profile_dict}
+                return make_response(jsonify(response_data), 200)
+            else:
+                response_data = {"ok": False, "message": "User profile not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            # Handle any exceptions (e.g., database errors)
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/user/profile/goals", methods=["GET"])
+@jwt_required()
+def get_user_profile_goals():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            user = session.query(User).filter_by(username=user_found).first()
+            if user:
+                user_goals = session.query(Goal).filter_by(goal_id=user.goal_id).first()
+
+                if user_goals:
+                    goals_dict = {
+                        "calorie_goal": user_goals.calorie_goal,
+                        "water_goal": user_goals.water_goal,
+                        "weight_goal": user_goals.weight_goal,
+                    }
+
+                    response_data = {"ok": True, "user_goals": goals_dict}
+                    return make_response(jsonify(response_data), 200)
+                else:
+                    response_data = {"ok": False, "message": "User goals not found"}
+                    return make_response(jsonify(response_data), 404)
+            else:
+                response_data = {"ok": False, "message": "User not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            # Handle any exceptions (e.g., database errors)
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/user/records/hydration", methods=["GET"])
+@jwt_required()
+def get_user_water_consumed():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            user = session.query(User).filter_by(username=user_found).first()
+
+            if user:
+                start_of_day = datetime.now().replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                end_of_day = start_of_day + timedelta(days=1)
+
+                user_records = (
+                    session.query(Record)
+                    .filter(
+                        Record.user_id == user.user_id,
+                        Record.date_added >= start_of_day,
+                        Record.date_added < end_of_day,
+                    )
+                    .all()
+                )
+
+                if user_records:
+                    hydration_records = [
+                        session.query(Hydration)
+                        .filter_by(record_id=user_record.record_id)
+                        .options(load_only(Hydration.water_consumed_milli_litres))
+                        .first()
+                        for user_record in user_records
+                    ]
+
+                    # Filter out 'None' records because for they might exist for some reason
+                    filtered_hydration_records = list(
+                        filter(lambda record: record is not None, hydration_records)
+                    )
+
+                    if not filtered_hydration_records:
+                        response_data = {"ok": True, "water_consumed_milli_litres": 0}
+                    else:
+                        response_data = {
+                            "ok": True,
+                            "user_hydration": sum(
+                                map(
+                                    lambda x: getattr(x, "water_consumed_milli_litres"),
+                                    filtered_hydration_records,
+                                )
+                            ),
+                        }
+                    return make_response(jsonify(response_data), 200)
+                else:
+                    response_data = {"ok": False, "message": "User record not found"}
+                    return make_response(jsonify(response_data), 404)
+
+            else:
+                response_data = {"ok": False, "message": "User not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            # Handle any exceptions (e.g., database errors)
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/user/records/insert", methods=["PUT"])
+@jwt_required()
+def insert_records():
+    if request.is_json:
+        user_found = get_jwt_identity()
+
+        if user_found:
+            data = request.json
+            user = session.query(User).filter_by(username=user_found).first()
+
+            if "record_type" in data:
+                record_type = data["record_type"]
+
+                new_record_type = Record(
+                    user_id=user.user_id,
+                    record_type=data["record_type"],
+                )
+                session.add(new_record_type)
+                session.commit()
+
+                if record_type == "hydration":
+                    if "water_consumed_milli_litres" in data:
+                        amount = data["water_consumed_milli_litres"]
+                        new_record = Hydration(
+                            record_id=new_record_type.record_id,
+                            water_consumed_milli_litres=amount,
+                        )
+                    else:
+                        session.rollback()
+                        response_data = {
+                            "ok": False,
+                            "error": "'water_consumed_milli_litres' field is missing for hydration record",
+                        }
+                        return make_response(jsonify(response_data), 400)
+                elif record_type == "calories":
+                    if "calories_consumed" in data and "food_item" in data:
+                        food_type = data["food_item"]
+                        amount = data["calories_consumed"]
+                        new_record = Calorie(
+                            record_id=new_record_type.record_id,
+                            food_item=food_type,
+                            calories_consumed=amount,
+                        )
+                    else:
+                        response_data = {
+                            "ok": False,
+                            "error": "Some field(s) is missing for calories record",
+                        }
+                        return make_response(jsonify(response_data), 400)
+                elif record_type == "compositions":
+                    # Handle compositions record
+                    pass
+                elif record_type == "workouts":
+                    # Handle workouts record
+                    pass
+                elif record_type == "photos":
+                    # Handle photos record
+                    pass
+                elif record_type == "videos":
+                    # Handle videos record
+                    pass
+                else:
+                    response_data = {"ok": False, "error": "Invalid record type"}
+                    return make_response(jsonify(response_data), 400)
+
+                session.add(new_record)
+                session.commit()
+
+                response_data = {"ok": True, "message": "Record inserted successfully"}
+                return make_response(jsonify(response_data), 200)
+
+            else:
+                response_data = {"ok": False, "error": "Record type not provided"}
+                return make_response(jsonify(response_data), 400)
+
         else:
             response_data = {"ok": False, "message": "User not found"}
             return make_response(jsonify(response_data), 404)
