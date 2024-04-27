@@ -10,7 +10,7 @@ const Homepage = (props) => {
 
     return (
         <div>
-            {userCtx.isSignedIn ? <Dashboard></Dashboard> : <AuthUser snackbarOperations={props.snackbarOperations}></AuthUser>}
+            {userCtx.isSignedIn ? <Dashboard snackbarOperations={props.snackbarOperations}></Dashboard> : <AuthUser snackbarOperations={props.snackbarOperations}></AuthUser>}
         </div>
     );
 };

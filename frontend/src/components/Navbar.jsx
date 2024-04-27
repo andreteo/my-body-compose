@@ -18,29 +18,10 @@ const Navbar = (props) => {
     const settingsNotSignedIn = ['Login'];
     const [anchorElNav, setAnchorElNav] = useState(null)
     const [anchorElUser, setAnchorElUser] = useState(null);
-    const [openDrawer, setOpenDrawer] = useState(false);
     const [drawerList, setDrawerList] = useState(["myDashboard", "myComposition", "myCalories", "myWorkout"]);
     const themeCtx = useContext(ThemeContext);
     const userCtx = useContext(UserContext);
 
-    const stringToDataURL = (byteString) => {
-        const encoder = new TextEncoder();
-        const encodedUint8Array = encoder.encode(byteString);
-        const encodedArray = Array.from(encodedUint8Array);
-        const int8Array = Uint8Array.from(encodedArray);
-        const base64String = btoa(String.fromCharCode.apply(null, int8Array))
-        const dataURL = `data:image/jpeg;base64,${base64String}`
-
-        return encodedArray;
-    }
-
-    const handleOpenNavMenu = (event) => {
-        setAnchorElNav(event.current.target);
-    };
-
-    const handleCloseNavMenu = () => {
-        setAnchorElNav(null);
-    };
 
     const handleOpenUserMenu = (event) => {
         setAnchorElUser(event.currentTarget);
@@ -61,6 +42,12 @@ const Navbar = (props) => {
                 navigate('/');
                 userCtx.setShowLogin(true);
                 break;
+            case "Logout":
+                userCtx.setAccessToken("");
+                userCtx.setIsSignedIn(false);
+                userCtx.setShowLogin(true);
+                navigate('/');
+                break
             case "Profile":
                 navigate('/profile');
                 break;
@@ -189,7 +176,7 @@ const Navbar = (props) => {
                                 </Menu></>
                         )}
 
-                        {/* {!userCtx.accessToken.length !== 0 && (
+                        {!userCtx.isSignedIn && (
                             <>
                                 <Tooltip title="Not signed in">
                                     <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
@@ -222,7 +209,7 @@ const Navbar = (props) => {
                                     ))}
                                 </Menu>
                             </>
-                        )} */}
+                        )}
                     </Box>
                 </Toolbar>
             </Container>
