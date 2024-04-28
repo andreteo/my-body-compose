@@ -44,6 +44,20 @@ function App() {
     darkMode ? setTheme(darkTheme) : setTheme(lightTheme);
   }, [darkMode])
 
+  const storeAccessTokenInLocalStorage = (accessToken) => {
+    localStorage.setItem('accessToken', accessToken);
+  };
+
+  const getAccessTokenFromLocalStorage = () => {
+    return localStorage.getItem('accessToken');
+  };
+
+  const isUserSignedIn = () => {
+    const accessToken = localStorage.getItem('accessToken');
+
+    return accessToken !== null && accessToken !== '';
+  }
+
   return (
     <UserContext.Provider
       value={{
@@ -56,7 +70,10 @@ function App() {
         isSignedIn,
         setIsSignedIn,
         showLogin,
-        setShowLogin
+        setShowLogin,
+        storeAccessTokenInLocalStorage,
+        getAccessTokenFromLocalStorage,
+        isUserSignedIn
       }}
     >
       <BrowserRouter>
@@ -67,7 +84,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Homepage snackbarOperations={snackbarOperations} />} />
                 {/* Conditional routing based on user's loggged in state */}
-                {accessToken.length !== 0 && (
+                {isUserSignedIn && (
                   <>
                     <Route path="/calories" element={<Calories />} />
                     <Route path="/composition" element={<BodyComposition />} />

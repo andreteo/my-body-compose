@@ -20,11 +20,11 @@ const Dashboard = (props) => {
         "weight_goal": 0
     })
 
-    // Ideally this will be a DB API call to SUM the water/calorie intake for current DATE
+
     const [userCurrentGoals, setUserCurrentGoals] = useState({
         "calorie_goal": 0,
         "water_goal": 0,
-        "weight_goal": 53.5
+        "weight_goal": 0
     })
 
     const getUserPhotos = async () => {
@@ -61,26 +61,43 @@ const Dashboard = (props) => {
         }
     }
 
-    const getUserHydration = async () => {
-        const getUserHydration = await fetchData("/user/records/hydration", "GET", undefined, userCtx.accessToken);
-        const res = getUserHydration.data;
+    const getUserRecords = async (recordType) => {
+        const url = `/user/records/today?record_type=${recordType}`;
+        const response = await fetchData(url, "GET", undefined, userCtx.accessToken);
+        const data = response.data;
 
-        if (res.ok) {
-            const totalWaterConsumed = res.user_hydration;
-            setUserCurrentGoals((prevState) => ({
-                ...prevState,
-                water_goal: totalWaterConsumed
-            }));
+        if (data.ok) {
+            const totalRecords = data.user_records;
+            switch (recordType) {
+                case "hydration":
+                    setUserCurrentGoals((prevState) => ({
+                        ...prevState,
+                        water_goal: totalRecords
+                    }));
+                    break;
+                case "calories":
+                    setUserCurrentGoals((prevState) => ({
+                        ...prevState,
+                        calorie_goal: totalRecords
+                    }));
+                default:
+                    break;
+            }
         } else {
-            alert(JSON.stringify(getUserHydration.data));
+            alert(JSON.stringify(data));
         }
     }
 
+    const getHydrationAndCalorieRecords = () => {
+        for (const item of ['hydration', 'calories']) {
+            getUserRecords(item)
+        }
+    };
 
     useEffect(() => {
         getUserPhotos();
         getUserGoals();
-        getUserHydration();
+        getHydrationAndCalorieRecords();
     }, [])
 
     return (
@@ -97,7 +114,7 @@ const Dashboard = (props) => {
                             backgroundColor: theme.palette.background.paper
                         }}
                     >
-                        <UserGoalsPie snackbarOperations={props.snackbarOperations} userCurrentGoals={userCurrentGoals} userMaxGoals={userMaxGoals} getUserHydration={getUserHydration} />
+                        <UserGoalsPie snackbarOperations={props.snackbarOperations} userCurrentGoals={userCurrentGoals} userMaxGoals={userMaxGoals} getUserRecords={getUserRecords} />
 
                         {/* {Object.entries(userMaxGoals).map(([k, v]) => (
                             <>

@@ -16,9 +16,15 @@ const UserProfile = (props) => {
     const [editIndividual, setEditIndividual] = useState({});
     const [upload, setUpload] = useState(true);
     const [photoUpload, setPhotoUpload] = useState(null);
+    const [currentUserGoals, setCurrentUserGoals] = useState({
+        "calorie_goal": 0,
+        "water_goal": 0,
+        "weight_goal": 0
+    })
 
     useEffect(() => {
         getCurrentUserProfile();
+        getUserGoals();
     }, [])
 
     useEffect(() => {
@@ -28,10 +34,15 @@ const UserProfile = (props) => {
     useEffect(() => {
         const temp = {}
         const arr = userCtx.userProfile ? Object.keys(userCtx.userProfile) : [];
+        const arrGoals = Object.keys(currentUserGoals);
 
         arr.forEach(key => {
             temp[key] = false;
         });
+
+        arrGoals.forEach(key => {
+            temp[key] = false;
+        })
 
         setEditIndividual(temp);
     }, [])
@@ -53,7 +64,6 @@ const UserProfile = (props) => {
 
         if (res.ok) {
             const user_profile = res.user_profile;
-            // setCurrentUserProfile(user_profile);
             userCtx.setUserProfile(user_profile)
         } else {
             alert(JSON.stringify(userProfileReturned.data));
@@ -87,6 +97,43 @@ const UserProfile = (props) => {
         }
     }
 
+    const getUserGoals = async () => {
+        const userGoals = await fetchData("/user/profile/goals", "GET", undefined, userCtx.accessToken);
+        const res = userGoals.data
+
+        if (res.ok) {
+            const user_goals = res.user_goals;
+            Object.entries(user_goals).map(([k, v]) => {
+                setCurrentUserGoals((prevState) => ({
+                    ...prevState,
+                    [k]: v
+                }))
+            })
+        } else {
+            alert(JSON.stringify(userGoals.data));
+        }
+    }
+
+    const handleInputGoalChange = (e) => {
+        const { name, value } = e.target;
+        setCurrentUserGoals(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+    };
+
+    const handleSubmitGoalChange = async () => {
+        const userGoals = await fetchData("/user/profile/goals", "PATCH", currentUserGoals, userCtx.accessToken);
+        const res = userGoals.data
+
+        if (res.ok) {
+            getUserGoals();
+            props.snackbarOperations.setSnackbarMessage(`Edit Goal Success!`);
+            props.snackbarOperations.setSnackbarOpen(true);
+        } else {
+            alert(JSON.stringify(userGoals.data));
+        }
+    }
 
     return (
 
@@ -94,6 +141,7 @@ const UserProfile = (props) => {
             <Paper
                 sx={{
                     p: 2,
+                    mb: 2,
                     display: 'flex',
                     flexDirection: 'column',
                     backgroundColor: theme.palette.background.paper
@@ -114,7 +162,7 @@ const UserProfile = (props) => {
                     </Grid>
 
                     {Object.entries(userCtx.userProfile).map(([k, v]) => {
-                        if (k == 'profile_id') return null;
+                        if (k == 'profile_id' || k == 'is_admin' || k == 'calorie_goal') return null;
 
                         const itemText = k.replaceAll("_", " ");
 
@@ -192,6 +240,80 @@ const UserProfile = (props) => {
                                         <Grid item xs={1}>
                                             <IconButton onClick={() => {
                                                 handleSubmitInputChange();
+                                                handleEdit(k)
+                                            }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                                                <SaveIcon />
+                                            </IconButton>
+                                        </Grid>
+                                    </>
+                                )}
+                            </Grid>
+                        )
+                    })}
+                </Grid>
+            </Paper>
+            <Paper
+                sx={{
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: theme.palette.background.paper
+                }}
+            >
+                <Grid container spacing={1} alignItems="center">
+                    <Grid item xs={12}>
+                        <Typography variant="h4">Goals</Typography>
+                    </Grid>
+
+                    {Object.entries(currentUserGoals).map(([k, v]) => {
+                        const itemText = k.replaceAll("_", " ");
+
+                        return (
+                            <Grid container key={k + "whatever"} sx={{ padding: 1 }}>
+                                <Grid item xs={2}>
+                                    <Typography variant="h5">{itemText}</Typography>
+                                </Grid>
+
+                                {!editIndividual[k] && (
+                                    <>
+                                        <Grid item xs={8}>
+                                            <Typography variant="h6">{v}</Typography>
+                                        </Grid>
+
+                                        <Grid item xs={2}>
+                                            <IconButton onClick={() => handleEdit(k)} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Grid>
+
+                                    </>
+                                )}
+
+                                {editIndividual[k] && (
+                                    <>
+                                        <Grid item xs={8}>
+                                            <FormControl margin="normal" fullWidth>
+                                                <TextField
+                                                    variant='standard'
+                                                    color="success"
+                                                    required
+                                                    name={k}
+                                                    label={[itemText.charAt(0).toUpperCase(), itemText.slice(1)].join('')}
+                                                    id={k}
+                                                    autoFocus
+                                                    onChange={handleInputGoalChange}
+                                                    value={setCurrentUserGoals[k]}
+                                                />
+                                            </FormControl>
+                                        </Grid>
+                                        <Grid item xs={1}>
+                                            <IconButton onClick={() => handleEdit(k)} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                                                <EditOffIcon />
+                                            </IconButton>
+                                        </Grid>
+                                        <Grid item xs={1}>
+                                            <IconButton onClick={() => {
+                                                handleSubmitGoalChange();
                                                 handleEdit(k)
                                             }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                                 <SaveIcon />

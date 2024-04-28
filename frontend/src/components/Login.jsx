@@ -4,10 +4,12 @@ import React, { useContext, useRef } from 'react';
 import LoginIcon from '@mui/icons-material/Login';
 import UserContext from '../context/user'
 import useFetch from '../hooks/useFetch';
+import { useNavigate } from 'react-router-dom';
 
 const Login = (props) => {
     const userCtx = useContext(UserContext);
     const theme = useTheme();
+    const navigate = useNavigate();
     const usernameRef = useRef();
     const passwordRef = useRef();
     const fetchData = useFetch();
@@ -29,8 +31,13 @@ const Login = (props) => {
             usernameRef.current.value = "";
             passwordRef.current.value = "";
             userCtx.setShowLogin(false);
+
+            userCtx.storeAccessTokenInLocalStorage(data.token);
+
             userCtx.setAccessToken(data.token)
             userCtx.setUserProfile(data.user_profile);
+
+            navigate('/');
         }
     }
 

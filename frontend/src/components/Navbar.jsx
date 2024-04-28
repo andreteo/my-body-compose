@@ -10,13 +10,14 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 import Metrics from '../services/metrics';
 import UserContext from '../context/user'
+import useFetch from '../hooks/useFetch';
 
 const Navbar = (props) => {
     const navigate = useNavigate();
     const theme = useTheme();
+    const fetchData = useFetch();
     const settings = ['Profile', 'Logout'];
     const settingsNotSignedIn = ['Login'];
-    const [anchorElNav, setAnchorElNav] = useState(null)
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [drawerList, setDrawerList] = useState(["myDashboard", "myComposition", "myCalories", "myWorkout"]);
     const themeCtx = useContext(ThemeContext);
@@ -43,14 +44,26 @@ const Navbar = (props) => {
                 userCtx.setShowLogin(true);
                 break;
             case "Logout":
-                userCtx.setAccessToken("");
-                userCtx.setIsSignedIn(false);
-                userCtx.setShowLogin(true);
-                navigate('/');
+                handleLogout();
                 break
             case "Profile":
                 navigate('/profile');
                 break;
+        }
+    }
+
+    const handleLogout = async () => {
+        const res = await fetchData("/auth/logout", "POST", undefined, userCtx.accessToken);
+
+        if (res.ok) {
+            localStorage.removeItem('accessToken');
+
+            userCtx.setAccessToken("");
+            userCtx.setIsSignedIn(false);
+            userCtx.setShowLogin(true);
+            navigate('/');
+        } else {
+            console.error("Logout Failed");
         }
     }
 

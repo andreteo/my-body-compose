@@ -20,9 +20,31 @@ const UserGoalsPie = (props) => {
         { type: 'water', title: 'Water Tank' },
         { type: 'calorie', title: 'Calorie Budget' }
     ];
-    const [inputHydration, setInputHydration] = useState(false);
-    const [inputCalories, setInputCalories] = useState(false);
+    const [inputField, setInputField] = useState(false);
+    const [inputFieldToEdit, setInputFieldToEdit] = useState('');
     const hydrationRef = useRef();
+    const calorieRef = useRef();
+    const foodRef = useRef();
+
+    const insertCalorieRecord = async () => {
+        const req = {
+            "record_type": "calories",
+            "food_item": foodRef.current.value,
+            "calories_consumed": calorieRef.current.value
+        }
+
+        const res = await fetchData("/user/records/insert", "PUT", req, userCtx.accessToken);
+
+        if (!res.ok) {
+            alert(`Insert calories failed!: ${res.data}`);
+        } else {
+            props.snackbarOperations.setSnackbarMessage("Calorie Intake Saved!");
+            props.snackbarOperations.setSnackbarOpen(true);
+            foodRef.current.value = 0;
+            props.getUserRecords('calories');
+            setInputField(false);
+        }
+    }
 
     const insertHydrationRecord = async () => {
         const req = {
@@ -33,15 +55,16 @@ const UserGoalsPie = (props) => {
         const res = await fetchData("/user/records/insert", "PUT", req, userCtx.accessToken);
 
         if (!res.ok) {
-            alert(`Register failed!: ${res.data}`);
+            alert(`Insert hydration failed!: ${res.data}`);
         } else {
             props.snackbarOperations.setSnackbarMessage("Water Intake Saved!");
             props.snackbarOperations.setSnackbarOpen(true);
             hydrationRef.current.value = 0;
-            props.getUserHydration();
-            setInputHydration(false);
+            props.getUserRecords('hydration');
+            setInputField(false);
         }
     }
+
 
     const createDataAndLayout = (goalType, goalTitle) => {
         const data = [
@@ -96,7 +119,7 @@ const UserGoalsPie = (props) => {
                 setSnackbarMessage={props.snackbarOperations.setSnackbarMessage}>
             </SnackbarMessage>
             <Grid item xs={12} sx={{ p: 3, display: 'flex', justifyContent: 'space-around' }}>
-                {inputHydration && (<Box>
+                {inputField && inputFieldToEdit === 'hydration' && (<Box>
                     <FormControl sx={{ mr: 2 }}>
                         <TextField
                             name="hydration_form"
@@ -107,16 +130,36 @@ const UserGoalsPie = (props) => {
                         />
                     </FormControl>
                     <Button sx={{ mr: 1 }} variant='contained' color='success' onClick={insertHydrationRecord}>Submit</Button>
-                    <Button variant='outlined' color='error' onClick={() => setInputHydration(false)}>Cancel</Button>
+                    <Button variant='outlined' color='error' onClick={() => { setInputField(false) }}>Cancel</Button>
                 </Box>)}
 
-                {!inputHydration && (
+                {inputField && inputFieldToEdit === 'calories' && (<Box>
+                    <FormControl sx={{ mr: 2 }}>
+                        <TextField
+                            name="calorie_form"
+                            label="Calories Consumed"
+                            id="calorie_form"
+                            color="success"
+                            inputRef={calorieRef}
+                        />
+                        <TextField
+                            name="food_form"
+                            label="Food Item"
+                            id="food_form"
+                            color="success"
+                            inputRef={foodRef}
+                        />
+                    </FormControl>
+                    <Button sx={{ mr: 1 }} variant='contained' color='success' onClick={insertCalorieRecord}>Submit</Button>
+                    <Button variant='outlined' color='error' onClick={() => { setInputField(false); }}>Cancel</Button>
+                </Box>)}
+
+                {!inputField && (
                     <>
-                        <Button variant='contained' size='large' sx={{ backgroundColor: theme.palette.visualisation.water, color: theme.palette.text.dark }} onClick={() => { setInputHydration(true) }}>
+                        <Button variant='contained' size='large' sx={{ backgroundColor: theme.palette.visualisation.water, color: theme.palette.text.dark }} onClick={() => { setInputField(true); setInputFieldToEdit('hydration') }}>
                             I drank
                         </Button>
-                        <Button variant='contained' size='large' sx={{ backgroundColor: theme.palette.visualisation.food, color: theme.palette.text.dark }}>I ate</Button>
-                        <Button variant='contained' size='large' sx={{ backgroundColor: theme.palette.visualisation.measurement, color: theme.palette.text.dark }}>I measure</Button>
+                        <Button variant='contained' size='large' sx={{ backgroundColor: theme.palette.visualisation.food, color: theme.palette.text.dark }} onClick={() => { setInputField(true); setInputFieldToEdit('calories') }}>I ate</Button>
                     </>
                 )}
             </Grid>
@@ -132,7 +175,7 @@ const UserGoalsPie = (props) => {
                 <Box>
                     <Typography m={3} variant='h5' sx={{ color: theme.palette.text.primary, textAlign: 'center' }}>Ideal Weight</Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
-                        <WeightSVG fillColor={theme.palette.text.primary} fontSize={70}>{props.userCurrentGoals.weight_goal + ' kg'}</WeightSVG>
+                        <WeightSVG fillColor={theme.palette.text.primary} fontSize={70}>{props.userMaxGoals.weight_goal + ' kg'}</WeightSVG>
                         <svg viewBox="0 0 512 512" width="200" height="200">
                             <use xlinkHref="#weight-light" fill={theme.palette.text.primary} />
                         </svg>
