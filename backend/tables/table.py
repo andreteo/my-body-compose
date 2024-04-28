@@ -69,6 +69,7 @@ class Record(Base):
     record_type = Column(String(20))
     hydration = relationship("Hydration", backref=backref("records"))
     calories = relationship("Calorie", backref=backref("records"))
+    composition = relationship("Composition", backref=backref("records"))
 
 
 class Calorie(Base):
@@ -103,6 +104,7 @@ class Composition(Base):
     water_percentage = Column(Numeric(4, 1))
     protein_percentage = Column(Numeric(4, 1))
     basal_metabolism = Column(SmallInteger())
+    visceral_fat = Column(SmallInteger())
 
 
 class Workout(Base):

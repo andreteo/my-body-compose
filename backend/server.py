@@ -2,7 +2,7 @@ import os, bcrypt, psycopg2, pickle, json
 from datetime import datetime, date, timedelta, timezone
 from urllib import response
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import declarative_base, sessionmaker, load_only, joinedload
 from dotenv import load_dotenv
@@ -445,6 +445,23 @@ def get_sum_of_user_records_today():
                             res = sum(
                                 [record.calories_consumed for record in calorie_records]
                             )
+                    elif record_type == "compositions":
+                        user_record = (
+                            session.query(Record)
+                            .options(joinedload(Record.composition))
+                            .filter(
+                                Record.user_id == user.user_id,
+                                Record.date_added >= start_of_day,
+                                Record.date_added < end_of_day,
+                            )
+                            .order_by(Record.date_added.desc())
+                            .first()
+                        )
+
+                        if user_record:
+                            res = obj_to_dict(user_record.composition[0])
+                        else:
+                            res = {}  # No composition record found
 
                     response_data = {"ok": True, "user_records": res}
                     return make_response(jsonify(response_data), 200)
@@ -482,6 +499,10 @@ def insert_records():
                     user_id=user.user_id,
                     record_type=data["record_type"],
                 )
+
+                if "date_added" in data:
+                    setattr(new_record_type, "date_added", data["date_added"])
+
                 session.add(new_record_type)
                 session.commit()
 
@@ -515,8 +536,34 @@ def insert_records():
                         }
                         return make_response(jsonify(response_data), 400)
                 elif record_type == "compositions":
-                    # Handle compositions record
-                    pass
+                    get_compositions_columns = inspect(Composition).columns.keys()
+                    filtered_compositions_columns = list(
+                        filter(
+                            lambda key: "id" not in key,
+                            get_compositions_columns,
+                        )
+                    )
+
+                    res = {}
+
+                    for k in filtered_compositions_columns:
+                        if k in data:
+                            res[k] = data[k]
+
+                    # if res turns out empty, it means none of the keys in data match the columns in Composition table
+                    if not res:
+                        session.rollback()
+                        response_data = {
+                            "ok": False,
+                            "error": "'water_consumed_milli_litres' field is missing for hydration record",
+                        }
+                        return make_response(jsonify(response_data), 400)
+
+                    new_record = Composition(record_id=new_record_type.record_id)
+
+                    for k, v in res.items():
+                        setattr(new_record, k, v)
+
                 elif record_type == "workouts":
                     # Handle workouts record
                     pass
