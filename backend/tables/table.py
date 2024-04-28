@@ -67,6 +67,8 @@ class Record(Base):
     user = relationship("User", backref=backref("records"))
     date_added = Column(DateTime(), nullable=False, default=datetime.now)
     record_type = Column(String(20))
+    hydration = relationship("Hydration", backref=backref("records"))
+    calories = relationship("Calorie", backref=backref("records"))
 
 
 class Calorie(Base):
@@ -74,7 +76,7 @@ class Calorie(Base):
 
     calorie_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("calories"))
+    # record = relationship("Record", backref=backref("calories"))
     food_item = Column(Text())
     calories_consumed = Column(Integer())
 
@@ -84,7 +86,7 @@ class Hydration(Base):
 
     hydration_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("hydration"))
+    # record = relationship("Record", backref=backref("hydration"))
     water_consumed_milli_litres = Column(Integer(), nullable=False)
 
 
@@ -93,7 +95,7 @@ class Composition(Base):
 
     composition_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("compositions"))
+    # record = relationship("Record", backref=backref("compositions"))
     bone_mass = Column(Numeric(5, 2))
     body_mass_index = Column(Numeric(5, 2))
     body_fat_percentage = Column(Numeric(4, 1))
@@ -108,7 +110,7 @@ class Workout(Base):
 
     workout_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("workouts"))
+    # record = relationship("Record", backref=backref("workouts"))
     muscle_group_worked = Column(String(255))
     calories_burned = Column(Integer())
     workout_name = Column(String(255))
@@ -119,7 +121,7 @@ class Photo(Base):
 
     photo_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("photos"))
+    # record = relationship("Record", backref=backref("photos"))
     d_type = Column(String(100))
     image = Column(Text())
     caption = Column(Text())
@@ -130,7 +132,7 @@ class Video(Base):
 
     video_id = Column(Integer(), primary_key=True)
     record_id = Column(Integer(), ForeignKey("records.record_id"))
-    record = relationship("Record", backref=backref("videos"))
+    # record = relationship("Record", backref=backref("videos"))
     d_type = Column(String(100))
     video = Column(Text())
     caption = Column(Text())

@@ -1,19 +1,26 @@
 import os, bcrypt, psycopg2, pickle, json
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+from urllib import response
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import declarative_base, sessionmaker, load_only
+from sqlalchemy.orm import declarative_base, sessionmaker, load_only, joinedload
 from dotenv import load_dotenv
 from pathlib import Path
 from tables.table import *
 
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import get_jwt_identity
-from flask_jwt_extended import jwt_required
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import (
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+    JWTManager,
+    get_jwt,
+    set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies,
+)
 
 # .env
 dotenv_path = Path(__file__).parent / ".env"
@@ -26,7 +33,25 @@ CORS(app)
 
 # JWT Authentication
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+
 JWTManager(app)
+
+
+@app.after_request
+def refresh_expiriting_jwts(response):
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        # Case where there is not a valid JWT. Just return the original response
+        return response
+
 
 # Connect to DB
 try:
@@ -154,6 +179,9 @@ def login():
                     "token": access_token,
                     "user_profile": obj_to_dict(user_profile),
                 }
+
+                set_access_cookies(jsonify({"msg": "Login Successful"}), access_token)
+
                 return make_response(jsonify(response_data), 200)
             else:
                 response_data = {"ok": False, "message": "Bad Username or Password"}
@@ -164,6 +192,13 @@ def login():
     else:
         response_data = {"ok": False, "error": "Request must contain JSON data"}
         return make_response(jsonify(response_data), 400)
+
+
+@app.route("/auth/logout", methods=["POST"])
+def logout():
+    response_data = jsonify({"msg": "Logout Successful"})
+    unset_jwt_cookies(response_data)
+    return response_data
 
 
 @app.route("/user/profile", methods=["GET"])
@@ -305,13 +340,56 @@ def get_user_profile_goals():
         return make_response(jsonify(response_data), 404)
 
 
-@app.route("/user/records/hydration", methods=["GET"])
+@app.route("/user/profile/goals", methods=["PATCH"])
 @jwt_required()
-def get_user_water_consumed():
+def update_user_goals():
     user_found = get_jwt_identity()
 
     if user_found:
         try:
+            user = session.query(User).filter_by(username=user_found).first()
+            if user:
+                data = request.json
+
+                new_goals = {k: data.get(k) for k in data.keys() if k}
+
+                user_goals = session.query(Goal).filter_by(goal_id=user.goal_id).first()
+
+                if user_goals:
+                    for key, value in new_goals.items():
+                        # Update each goal attribute individually
+                        setattr(user_goals, key, value)
+
+                    session.commit()
+
+                    response_data = {
+                        "ok": True,
+                        "message": "Goals updated successfully",
+                    }
+                    return make_response(jsonify(response_data), 200)
+                else:
+                    response_data = {"ok": False, "message": "User goals not found"}
+                    return make_response(jsonify(response_data), 404)
+            else:
+                response_data = {"ok": False, "message": "User not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            # Handle any exceptions (e.g., database errors)
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/user/records/today", methods=["GET"])
+@jwt_required()
+def get_sum_of_user_records_today():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            res = 0
             user = session.query(User).filter_by(username=user_found).first()
 
             if user:
@@ -322,6 +400,8 @@ def get_user_water_consumed():
 
                 user_records = (
                     session.query(Record)
+                    .options(joinedload(Record.hydration))
+                    .options(joinedload(Record.calories))
                     .filter(
                         Record.user_id == user.user_id,
                         Record.date_added >= start_of_day,
@@ -331,35 +411,47 @@ def get_user_water_consumed():
                 )
 
                 if user_records:
-                    hydration_records = [
-                        session.query(Hydration)
-                        .filter_by(record_id=user_record.record_id)
-                        .options(load_only(Hydration.water_consumed_milli_litres))
-                        .first()
-                        for user_record in user_records
-                    ]
+                    record_type = request.args.get("record_type")
 
-                    # Filter out 'None' records because for they might exist for some reason
-                    filtered_hydration_records = list(
-                        filter(lambda record: record is not None, hydration_records)
-                    )
+                    if record_type == "hydration":
+                        hydration_records = []
 
-                    if not filtered_hydration_records:
-                        response_data = {"ok": True, "water_consumed_milli_litres": 0}
-                    else:
-                        response_data = {
-                            "ok": True,
-                            "user_hydration": sum(
-                                map(
-                                    lambda x: getattr(x, "water_consumed_milli_litres"),
-                                    filtered_hydration_records,
-                                )
-                            ),
-                        }
+                        for user_record in user_records:
+                            (
+                                hydration_records.extend(user_record.hydration)
+                                if user_record.hydration
+                                else None
+                            )
+
+                        if hydration_records:
+                            res = sum(
+                                [
+                                    record.water_consumed_milli_litres
+                                    for record in hydration_records
+                                ]
+                            )
+
+                    elif record_type == "calories":
+                        calorie_records = []
+
+                        for user_record in user_records:
+                            (
+                                calorie_records.extend(user_record.calories)
+                                if user_record.calories
+                                else None
+                            )
+
+                        if calorie_records:
+                            res = sum(
+                                [record.calories_consumed for record in calorie_records]
+                            )
+
+                    response_data = {"ok": True, "user_records": res}
                     return make_response(jsonify(response_data), 200)
                 else:
-                    response_data = {"ok": False, "message": "User record not found"}
-                    return make_response(jsonify(response_data), 404)
+                    res = 0
+                    response_data = {"ok": True, "user_records": res}
+                    return make_response(jsonify(response_data), 200)
 
             else:
                 response_data = {"ok": False, "message": "User not found"}
