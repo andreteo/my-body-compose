@@ -28,7 +28,7 @@ const Dashboard = (props) => {
     })
 
     const getUserPhotos = async () => {
-        const userPhotos = await fetchData("/user/profile/photos", "GET", undefined, userCtx.accessToken);
+        const userPhotos = await fetchData("/user/profile/photos", "GET", undefined, localStorage.getItem('accessToken'));
         const res = userPhotos.data
 
         if (res.ok) {
@@ -45,7 +45,7 @@ const Dashboard = (props) => {
     }
 
     const getUserGoals = async () => {
-        const userGoals = await fetchData("/user/profile/goals", "GET", undefined, userCtx.accessToken);
+        const userGoals = await fetchData("/user/profile/goals", "GET", undefined, localStorage.getItem('accessToken'));
         const res = userGoals.data
 
         if (res.ok) {
@@ -63,7 +63,7 @@ const Dashboard = (props) => {
 
     const getUserRecords = async (recordType) => {
         const url = `/user/records/today?record_type=${recordType}`;
-        const response = await fetchData(url, "GET", undefined, userCtx.accessToken);
+        const response = await fetchData(url, "GET", undefined, localStorage.getItem('accessToken'));
         const data = response.data;
 
         if (data.ok) {

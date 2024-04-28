@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import Dashboard from './Dashboard';
 import UserContext from '../context/user'
 import AuthUser from './AuthUser';
+import Navbar from './Navbar';
 
 
 const Homepage = (props) => {
@@ -10,7 +11,7 @@ const Homepage = (props) => {
 
     return (
         <div>
-            {userCtx.isSignedIn ? <Dashboard snackbarOperations={props.snackbarOperations}></Dashboard> : <AuthUser snackbarOperations={props.snackbarOperations}></AuthUser>}
+            {userCtx.isUserSignedIn() ? <Dashboard snackbarOperations={props.snackbarOperations}></Dashboard> : <AuthUser snackbarOperations={props.snackbarOperations}></AuthUser>}
         </div>
     );
 };

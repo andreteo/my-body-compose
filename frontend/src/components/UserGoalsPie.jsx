@@ -33,7 +33,7 @@ const UserGoalsPie = (props) => {
             "calories_consumed": calorieRef.current.value
         }
 
-        const res = await fetchData("/user/records/insert", "PUT", req, userCtx.accessToken);
+        const res = await fetchData("/user/records/insert", "PUT", req, localStorage.getItem('accessToken'));
 
         if (!res.ok) {
             alert(`Insert calories failed!: ${res.data}`);
@@ -52,7 +52,7 @@ const UserGoalsPie = (props) => {
             "water_consumed_milli_litres": hydrationRef.current.value
         }
 
-        const res = await fetchData("/user/records/insert", "PUT", req, userCtx.accessToken);
+        const res = await fetchData("/user/records/insert", "PUT", req, localStorage.getItem('accessToken'));
 
         if (!res.ok) {
             alert(`Insert hydration failed!: ${res.data}`);

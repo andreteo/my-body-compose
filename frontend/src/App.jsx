@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { Navigate, BrowserRouter, Route, Routes } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { lightTheme, darkTheme } from './components/ColourTheme'
 import { CssBaseline } from "@mui/material";
@@ -10,6 +10,7 @@ import Navbar from "./components/Navbar";
 import UserContext from "./context/user";
 import UserProfile from "./components/UserProfile";
 import Workout from "./components/Workout";
+import useFetch from './hooks/useFetch';
 
 export const ThemeContext = React.createContext();
 
@@ -35,9 +36,9 @@ function App() {
 
 
   //  Update isSignedIn state based on accessToken length
-  useEffect(() => {
-    accessToken.length !== 0 ? setIsSignedIn(true) : setIsSignedIn(false);
-  }, [accessToken.length]);
+  // useEffect(() => {
+  //   isUserSignedIn() ? setIsSignedIn(true) : setIsSignedIn(false);
+  // }, [accessToken.length]);
 
   // Toggle between light and dark theme
   useEffect(() => {
@@ -56,6 +57,26 @@ function App() {
     const accessToken = localStorage.getItem('accessToken');
 
     return accessToken !== null && accessToken !== '';
+  }
+
+  const fetchData = useFetch();
+
+  useEffect(() => {
+    if (isUserSignedIn()) {
+      getUserProfile();
+    }
+  }, [])
+
+  const getUserProfile = async () => {
+    const login = await fetchData("/user/profile", "GET", undefined, localStorage.getItem('accessToken'));
+    const res = login.data
+
+    if (res.ok) {
+      const user_profile = res.user_profile;
+      setUserProfile(user_profile)
+    } else {
+      alert(JSON.stringify(res));
+    }
   }
 
   return (
@@ -82,9 +103,10 @@ function App() {
             <CssBaseline style={{ backgroundColor: theme.palette.background.default }}>
               <Navbar snackbarOperations={snackbarOperations}></Navbar>
               <Routes>
-                <Route path="/" element={<Homepage snackbarOperations={snackbarOperations} />} />
+                <Route path="/" element={<Navigate replace to="/home" />} />
+                <Route path="/home" element={<Homepage snackbarOperations={snackbarOperations} />} />
                 {/* Conditional routing based on user's loggged in state */}
-                {isUserSignedIn && (
+                {isUserSignedIn() && (
                   <>
                     <Route path="/calories" element={<Calories />} />
                     <Route path="/composition" element={<BodyComposition />} />

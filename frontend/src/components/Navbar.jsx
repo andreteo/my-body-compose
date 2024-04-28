@@ -53,7 +53,7 @@ const Navbar = (props) => {
     }
 
     const handleLogout = async () => {
-        const res = await fetchData("/auth/logout", "POST", undefined, userCtx.accessToken);
+        const res = await fetchData("/auth/logout", "POST", undefined, localStorage.getItem('accessToken'));
 
         if (res.ok) {
             localStorage.removeItem('accessToken');
@@ -86,7 +86,7 @@ const Navbar = (props) => {
                         </Typography>
                     </IconButton>
 
-                    {userCtx.accessToken.length !== 0 && (
+                    {userCtx.isUserSignedIn() && (
                         <Tooltip title="Search Users">
                             <IconButton onClick={() => { console.log("TODO: Implement User Search Function") }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                 <SearchIcon />
@@ -111,7 +111,7 @@ const Navbar = (props) => {
                     </SideDrawer> */}
 
 
-                    {userCtx.accessToken.length !== 0 && (
+                    {userCtx.isUserSignedIn() && (
                         <Box sx={{ display: "flex", justifyContent: "space-evenly", flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
                             {drawerList.map((page) => (
                                 <Button
@@ -145,9 +145,9 @@ const Navbar = (props) => {
                             <Switch onChange={handleSwitchChange} color='main' />
                         </Tooltip>
 
-                        {userCtx.accessToken.length !== 0 && (
+                        {userCtx.isUserSignedIn() && (
                             <>
-                                {userCtx.isSignedIn && (
+                                {userCtx.isUserSignedIn() && (
                                     <Tooltip title="User Profile">
                                         <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                             <Avatar src={"data:image/jpeg;base64," + userCtx.userProfile.profile_photo} alt="User Avatar" sx={{ backgroundColor: theme.palette.primary.avatar, color: theme.palette.text.primary }} />
@@ -155,7 +155,7 @@ const Navbar = (props) => {
                                     </Tooltip>
                                 )}
 
-                                {!userCtx.isSignedIn && (
+                                {!userCtx.isUserSignedIn() && (
                                     <Tooltip title="Not signed in">
                                         <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                             <Avatar alt="User Avatar" sx={{ backgroundColor: theme.palette.primary.avatar, color: theme.palette.text.primary }} />
@@ -189,7 +189,7 @@ const Navbar = (props) => {
                                 </Menu></>
                         )}
 
-                        {!userCtx.isSignedIn && (
+                        {!userCtx.isUserSignedIn() && (
                             <>
                                 <Tooltip title="Not signed in">
                                     <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>

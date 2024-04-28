@@ -59,7 +59,7 @@ const UserProfile = (props) => {
 
 
     const getCurrentUserProfile = async () => {
-        const userProfileReturned = await fetchData("/user/profile", "GET", undefined, userCtx.accessToken);
+        const userProfileReturned = await fetchData("/user/profile", "GET", undefined, localStorage.getItem('accessToken'));
         const res = userProfileReturned.data
 
         if (res.ok) {
@@ -86,7 +86,7 @@ const UserProfile = (props) => {
     };
 
     const handleSubmitInputChange = async () => {
-        const res = await fetchData("/user/profile/edit", "POST", userCtx.userProfile, userCtx.accessToken);
+        const res = await fetchData("/user/profile/edit", "POST", userCtx.userProfile, localStorage.getItem('accessToken'));
 
         if (!res.ok) {
             alert(`Failed to edit!\n Error: ${res.data}`);
@@ -98,7 +98,7 @@ const UserProfile = (props) => {
     }
 
     const getUserGoals = async () => {
-        const userGoals = await fetchData("/user/profile/goals", "GET", undefined, userCtx.accessToken);
+        const userGoals = await fetchData("/user/profile/goals", "GET", undefined, localStorage.getItem('accessToken'));
         const res = userGoals.data
 
         if (res.ok) {
@@ -123,7 +123,7 @@ const UserProfile = (props) => {
     };
 
     const handleSubmitGoalChange = async () => {
-        const userGoals = await fetchData("/user/profile/goals", "PATCH", currentUserGoals, userCtx.accessToken);
+        const userGoals = await fetchData("/user/profile/goals", "PATCH", currentUserGoals, localStorage.getItem('accessToken'));
         const res = userGoals.data
 
         if (res.ok) {
