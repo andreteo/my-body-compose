@@ -1,18 +1,22 @@
-import { Container, Grid, IconButton, Paper } from '@mui/material';
+import { Button, Container, Grid, Icon, IconButton, Paper } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import BluetoothIcon from '@mui/icons-material/Bluetooth';
+import BluetoothSearchingIcon from '@mui/icons-material/BluetoothSearching';
 import { useTheme } from '@emotion/react';
+import Metrics from '../services/metrics';
 
 const BodyComposition = (props) => {
     const theme = useTheme()
     const bodyCompositionService = '0000181b-0000-1000-8000-00805f9b34fb';
     const bodyCompositionCharacteristic = '00002a9c-0000-1000-8000-00805f9b34fb';
     const [measurement, setMeasurement] = useState({});
-    const [startScan, setStartScan] = useState(false);
 
     const handleBluetoothButton = async () => {
         try {
-            setStartScan(true);
+            props.setStartScan(true);
+            props.setNewMeasurements(Object.keys(props.composition).reduce((acc, key) => {
+                acc[key] = "";
+                return acc;
+            }, {}))
 
             const options = {
                 filters: [
@@ -63,55 +67,31 @@ const BodyComposition = (props) => {
                 bodyType } = metrics.getResult();
 
 
-            setMeasurement({
+            props.setNewMeasurements({
                 weight: weight,
-                impedance: impedance,
-                bmi: bmi.value.toFixed(2),
-                idealWeight: idealWeight.value.toFixed(2),
-                metabolicAge: metabolicAge.value.toFixed(2),
-                proteinPercentage: proteinPercentage.value.toFixed(2),
-                lbmCoefficient: lbmCoefficient.value.toFixed(2),
-                mbr: mbr.value.toFixed(2),
-                fat: fat.value.toFixed(2),
-                muscleMass: muscleMass.value.toFixed(2),
-                boneMass: boneMass.value.toFixed(2),
-                visceralFat: visceralFat.value.toFixed(2),
-                waterPercentage: waterPercentage.value.toFixed(2),
-                bodyType: bodyType.value
+                body_mass_index: parseFloat(bmi.value.toFixed(2)),
+                ideal_weight: parseFloat(idealWeight.value.toFixed(2)),
+                metabolic_age: parseFloat(metabolicAge.value.toFixed(2)),
+                protein_percentage: parseFloat(proteinPercentage.value.toFixed(2)),
+                basal_metabolism: parseFloat(mbr.value.toFixed(2)),
+                body_fat_percentage: parseFloat(fat.value.toFixed(2)),
+                muscle_mass: parseFloat(muscleMass.value.toFixed(2)),
+                bone_mass: parseFloat(boneMass.value.toFixed(2)),
+                visceral_fat: parseFloat(visceralFat.value.toFixed(2)),
+                water_percentage: parseFloat(waterPercentage.value.toFixed(2)),
+                body_type: props.possibleBodyTypes[bodyType.value].toLowerCase()
             })
+            props.setStabilized(true);
         }
 
     };
 
-    useEffect(() => {
-        console.log(measurement)
-    }, [measurement])
-
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Grid container spacing={3}>
-                {/* Chart */}
-
-                <Grid item xs={12} md={8} lg={9}>
-
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        test
-                        <IconButton onClick={handleBluetoothButton} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
-                            <BluetoothIcon />
-                        </IconButton>
-
-                    </Paper>
-                </Grid>
-
-            </Grid>
-        </Container>
+        <Button variant='contained' onClick={handleBluetoothButton}>
+            <IconButton onClick={handleBluetoothButton} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                <BluetoothSearchingIcon />
+            </IconButton>
+        </Button>
     );
 };
 

@@ -17,8 +17,11 @@ const WeightSVG = (props) => {
                     c5.632,0,10.199-4.567,10.199-10.199V192.765C82.613,187.133,78.046,182.566,72.414,182.566z"></path>
                 <path d="M72.414,139.729c-5.632,0-10.199,4.567-10.199,10.199v10.199c0,5.632,4.567,10.199,10.199,10.199
                     c5.632,0,10.199-4.567,10.199-10.199v-10.199C82.613,144.296,78.046,139.729,72.414,139.729z"></path>
-                <text x="50%" y="65%" textAnchor="middle" dominantBaseline="middle" fill={props.fillColor} fontSize={props.fontSize}>
+                <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill={props.fillColor} fontSize={props.fontSize}>
                     {props.children}
+                </text>
+                <text x="50%" y="70%" textAnchor="middle" dominantBaseline="middle" fill={props.fillColor} fontSize={props.fontSize}>
+                    {props.composition.weight} kg
                 </text>
             </symbol>
         </svg>

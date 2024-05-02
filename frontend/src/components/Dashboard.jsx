@@ -1,10 +1,11 @@
 import { useTheme } from '@emotion/react';
-import { Paper, Box, Container, Grid, IconButton, Tooltip, ImageList, ImageListItem, ImageListItemBar, Typography } from '@mui/material';
+import { Paper, Box, Container, Grid, IconButton, Tooltip, ImageList, ImageListItem, ImageListItemBar, Typography, Button } from '@mui/material';
 import React, { useContext, useEffect, useState } from 'react';
-import BluetoothIcon from '@mui/icons-material/Bluetooth';
 import UserContext from '../context/user'
 import useFetch from '../hooks/useFetch';
 import UserGoalsPie from './UserGoalsPie';
+import BodyMeasurementAccordion from './BodyMeasurementAccordion';
+import BodyMeasurementTrends from './BodyMeasurementTrends';
 
 const Dashboard = (props) => {
     const theme = useTheme();
@@ -19,13 +20,12 @@ const Dashboard = (props) => {
         "water_goal": 0,
         "weight_goal": 0
     })
-
-
     const [userCurrentGoals, setUserCurrentGoals] = useState({
         "calorie_goal": 0,
         "water_goal": 0,
         "weight_goal": 0
     })
+    const [composition, setCompositon] = useState({});
 
     const getUserPhotos = async () => {
         const userPhotos = await fetchData("/user/profile/photos", "GET", undefined, localStorage.getItem('accessToken'));
@@ -80,6 +80,10 @@ const Dashboard = (props) => {
                         ...prevState,
                         calorie_goal: totalRecords
                     }));
+                    break;
+                case "compositions":
+                    setCompositon(totalRecords);
+                    break;
                 default:
                     break;
             }
@@ -98,6 +102,7 @@ const Dashboard = (props) => {
         getUserPhotos();
         getUserGoals();
         getHydrationAndCalorieRecords();
+        getUserRecords('compositions');
     }, [])
 
     return (
@@ -114,23 +119,7 @@ const Dashboard = (props) => {
                             backgroundColor: theme.palette.background.paper
                         }}
                     >
-                        <UserGoalsPie snackbarOperations={props.snackbarOperations} userCurrentGoals={userCurrentGoals} userMaxGoals={userMaxGoals} getUserRecords={getUserRecords} />
-
-                        {/* {Object.entries(userMaxGoals).map(([k, v]) => (
-                            <>
-                                <Box>
-                                    <Typography>
-                                        {k}
-                                    </Typography>
-                                    <Typography>
-                                        {v}
-                                    </Typography>
-                                </Box>
-                            </>
-                        ))} */}
-                        {/* <IconButton onClick={() => { console.log('bluetooth') }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
-                            <BluetoothIcon />
-                        </IconButton> */}
+                        <UserGoalsPie snackbarOperations={props.snackbarOperations} userCurrentGoals={userCurrentGoals} userMaxGoals={userMaxGoals} getUserRecords={getUserRecords} composition={composition} />
                     </Paper>
                 </Grid>
 
@@ -147,11 +136,11 @@ const Dashboard = (props) => {
                     >
                         <Typography variant='h4' sx={{ m: 2 }}>Your Body Journey</Typography>
                         <ImageList sx={{ width: 600, height: 500 }} cols={2}>
-                            {Object.entries(photosList).map(([k, v]) => (
-                                <>
+                            {Object.entries(photosList).map(([k, v], idx) => (
+                                <Box key={'photo_container' + idx}>
                                     {/* before_photo and after_photo exists, render them */}
                                     {v && (
-                                        <ImageListItem key={k}>
+                                        <ImageListItem key={'listitem' + idx}>
                                             <img src={"data:image/jpeg;base64," + v} loading='lazy' />
                                             {k == "before_photo" && (
                                                 <ImageListItemBar
@@ -159,6 +148,7 @@ const Dashboard = (props) => {
                                                     title="Wake Up Call"
                                                     subtitle={<span>Start of the Journey</span>}
                                                     position="below"
+                                                    key={'itembar1' + idx}
                                                 />
                                             )}
                                             {k == "after_photo" && (
@@ -167,6 +157,7 @@ const Dashboard = (props) => {
                                                     title="Current State"
                                                     subtitle={<span>Latest Journey</span>}
                                                     position="below"
+                                                    key={'itembar2' + idx}
                                                 />
                                             )}
                                         </ImageListItem>
@@ -178,17 +169,22 @@ const Dashboard = (props) => {
                                             No Image
                                         </Paper>
                                     )}
-                                </>
+                                </Box>
                             ))}
                         </ImageList>
 
                     </Paper>
                 </Grid>
+
+                {/* Body Composition Measurement */}
+                <Grid item xs={5}>
+                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                        <BodyMeasurementAccordion composition={composition} snackbarOperations={props.snackbarOperations} getUserRecords={getUserRecords} />
+                    </Paper>
+                </Grid>
                 {/* Trends */}
                 <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        test
-                    </Paper>
+                    <BodyMeasurementTrends />
                 </Grid>
             </Grid>
         </Container>

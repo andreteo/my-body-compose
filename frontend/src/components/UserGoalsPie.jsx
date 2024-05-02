@@ -174,8 +174,9 @@ const UserGoalsPie = (props) => {
             <Grid item xs={3}>
                 <Box>
                     <Typography m={3} variant='h5' sx={{ color: theme.palette.text.primary, textAlign: 'center' }}>Ideal Weight</Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
-                        <WeightSVG fillColor={theme.palette.text.primary} fontSize={70}>{props.userMaxGoals.weight_goal + ' kg'}</WeightSVG>
+                    <Typography m={3} variant='h5' sx={{ color: theme.palette.text.primary, textAlign: 'center' }}>{props.composition.ideal_weight} kg</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'start' }}>
+                        <WeightSVG fillColor={theme.palette.text.primary} fontSize={60} composition={props.composition}>Current</WeightSVG>
                         <svg viewBox="0 0 512 512" width="200" height="200">
                             <use xlinkHref="#weight-light" fill={theme.palette.text.primary} />
                         </svg>

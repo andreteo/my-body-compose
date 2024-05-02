@@ -1,5 +1,9 @@
 const useFetch = () => {
     const fetchData = async (endpoint, method, body, token) => {
+        if (localStorage.getItem('accessToken')) {
+            getRefreshToken();
+        }
+
         try {
             const res = await fetch(import.meta.env.VITE_BACKEND_SERVER + endpoint, {
                 method,
@@ -26,11 +30,35 @@ const useFetch = () => {
             }
         } catch (error) {
             console.error("Error:", error);
-            return { ok: false, data: "An error has occurred" };
+            return { ok: false, data: error.msg };
         }
     };
 
     return fetchData;
 };
+
+const getRefreshToken = async () => {
+    try {
+        const res = await fetch(import.meta.env.VITE_BACKEND_SERVER + '/auth/refresh', {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem('accessToken'),
+            },
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+            storeAccessTokenInLocalStorage(data.token);
+        }
+
+        return data; // Return the response data
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        return { ok: false, data: "An error occurred while refreshing token" };
+    }
+}
+
 
 export default useFetch;
