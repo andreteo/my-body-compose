@@ -389,7 +389,6 @@ def get_user_composition_records():
                         Record.user_id == user.user_id,
                     )
                     .order_by(Record.date_added)
-                    # .limit(30)
                     .all()
                 )
 
