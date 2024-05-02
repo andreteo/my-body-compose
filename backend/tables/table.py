@@ -105,6 +105,10 @@ class Composition(Base):
     protein_percentage = Column(Numeric(4, 1))
     basal_metabolism = Column(SmallInteger())
     visceral_fat = Column(SmallInteger())
+    weight = Column(Numeric(5, 2))
+    ideal_weight = Column(Numeric(5, 2))
+    metabolic_age = Column(SmallInteger())
+    body_type = Column(String(255))
 
 
 class Workout(Base):

@@ -4,7 +4,13 @@ from urllib import response
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import declarative_base, sessionmaker, load_only, joinedload
+from sqlalchemy.orm import (
+    declarative_base,
+    sessionmaker,
+    load_only,
+    joinedload,
+    class_mapper,
+)
 from dotenv import load_dotenv
 from pathlib import Path
 from tables.table import *
@@ -36,22 +42,6 @@ app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 
 JWTManager(app)
-
-
-@app.after_request
-def refresh_expiriting_jwts(response):
-    try:
-        exp_timestamp = get_jwt()["exp"]
-        now = datetime.now(timezone.utc)
-        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
-        if target_timestamp > exp_timestamp:
-            access_token = create_access_token(identity=get_jwt_identity())
-            set_access_cookies(response, access_token)
-        return response
-    except (RuntimeError, KeyError):
-        # Case where there is not a valid JWT. Just return the original response
-        return response
-
 
 # Connect to DB
 try:
@@ -382,6 +372,72 @@ def update_user_goals():
         return make_response(jsonify(response_data), 404)
 
 
+@app.route("/user/records/composition", methods=["GET"])
+@jwt_required()
+def get_user_composition_records():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            user = session.query(User).filter_by(username=user_found).first()
+
+            if user:
+                user_records = (
+                    session.query(Record)
+                    .options(joinedload(Record.composition))
+                    .filter(
+                        Record.user_id == user.user_id,
+                    )
+                    .order_by(Record.date_added)
+                    # .limit(30)
+                    .all()
+                )
+
+                if user_records:
+                    composition_data = {
+                        column.key: []
+                        for column in class_mapper(Composition).columns
+                        if "_id" not in column.key
+                    }
+                    composition_data.update({"date_added": []})
+
+                    # all_composition_tables = [
+                    #     session.query(Composition)
+                    #     .filter_by(record_id=user_record.record_id)
+                    #     .all()
+                    #     for user_record in user_records
+                    #     if user_record is not None
+                    # ]
+
+                    for user_record in user_records:
+                        for composition_record in user_record.composition:
+                            for key in composition_data.keys():
+                                if key == "date_added":
+                                    composition_data[key].append(user_record.date_added)
+                                    continue
+
+                                composition_data[key].append(
+                                    getattr(composition_record, key)
+                                )
+
+                    response_data = {"ok": True, "user_records": composition_data}
+                    return make_response(jsonify(response_data), 200)
+                else:
+                    response_data = {"ok": True, "user_records": []}
+                    return make_response(jsonify(response_data), 200)
+
+            else:
+                response_data = {"ok": False, "message": "User not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            # Handle any exceptions (e.g., database errors)
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
 @app.route("/user/records/today", methods=["GET"])
 @jwt_required()
 def get_sum_of_user_records_today():
@@ -458,15 +514,23 @@ def get_sum_of_user_records_today():
                             .first()
                         )
 
-                        if user_record:
-                            res = obj_to_dict(user_record.composition[0])
+                        if user_record and user_record.composition:
+                            last_composition = user_record.composition[-1]
+                            res = obj_to_dict(last_composition)
                         else:
-                            res = {}  # No composition record found
+                            get_compositions_columns = inspect(
+                                Composition
+                            ).columns.keys()
+                            res = {k: "Not measured" for k in get_compositions_columns}
 
                     response_data = {"ok": True, "user_records": res}
                     return make_response(jsonify(response_data), 200)
                 else:
-                    res = 0
+                    if request.args.get("record_type") == "compositions":
+                        get_compositions_columns = inspect(Composition).columns.keys()
+                        res = {k: "Not measured" for k in get_compositions_columns}
+                    else:
+                        res = 0
                     response_data = {"ok": True, "user_records": res}
                     return make_response(jsonify(response_data), 200)
 
@@ -539,7 +603,7 @@ def insert_records():
                     get_compositions_columns = inspect(Composition).columns.keys()
                     filtered_compositions_columns = list(
                         filter(
-                            lambda key: "id" not in key,
+                            lambda key: "_id" not in key,
                             get_compositions_columns,
                         )
                     )
@@ -587,6 +651,220 @@ def insert_records():
                 response_data = {"ok": False, "error": "Record type not provided"}
                 return make_response(jsonify(response_data), 400)
 
+        else:
+            response_data = {"ok": False, "message": "User not found"}
+            return make_response(jsonify(response_data), 404)
+    else:
+        response_data = {"ok": False, "error": "Request must contain JSON data"}
+        return make_response(jsonify(response_data), 400)
+
+
+@app.route("/user/profile/checkadmin", methods=["GET"])
+@jwt_required()
+def check_admin():
+    user_found = get_jwt_identity()
+    if user_found:
+        user = session.query(User).filter_by(username=user_found).first()
+        if user:
+            user_profile = (
+                session.query(Profile).filter_by(profile_id=user.profile_id).first()
+            )
+            if user_profile:
+                if user_profile.is_admin:
+                    response_data = {"ok": True, "is_admin": True}
+                else:
+                    response_data = {"ok": True, "is_admin": False}
+                return make_response(jsonify(response_data), 200)
+            else:
+                response_data = {
+                    "ok": False,
+                    "message": "Profile not found for the user",
+                }
+                return make_response(jsonify(response_data), 404)
+        else:
+            response_data = {"ok": False, "message": "User not found"}
+            return make_response(jsonify(response_data), 404)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/auth/refresh", methods=["GET"])
+@jwt_required()
+def get_refresh_token():
+    user_found = get_jwt_identity()
+
+    exp_timestamp = get_jwt()["exp"]
+    now = datetime.now(timezone.utc)
+    target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+
+    if target_timestamp > exp_timestamp:
+        user_profile = (
+            session.query(Profile).filter_by(profile_id=user_found.profile_id).first()
+        )
+
+        access_token = create_access_token(identity=user_found.username)
+
+        # Set access token in cookies
+        response = make_response(jsonify({"msg": "Refresh Successful"}), 200)
+        set_access_cookies(response, access_token)
+
+        response_data = {
+            "ok": True,
+            "token": access_token,
+            # "user_profile": obj_to_dict(user_profile),
+        }
+
+        return make_response(jsonify(response_data), 200)
+    else:
+        return make_response(jsonify({"ok": False, "msg": "Token not expired"}), 200)
+
+
+@app.route("/user/users", methods=["GET"])
+@jwt_required()
+def get_all_users():
+    user_found = get_jwt_identity()
+
+    if user_found:
+        try:
+            user = session.query(User).filter_by(username=user_found).first()
+
+            if user:
+                user_profile = (
+                    session.query(Profile).filter_by(profile_id=user.profile_id).first()
+                )
+
+                if user_profile:
+                    if user_profile.is_admin:
+                        all_users = session.query(User).all()
+                        all_user_profiles = session.query(Profile).all()
+
+                        users_data = [obj_to_dict(u) for u in all_users]
+
+                        profiles_data = [
+                            obj_to_dict(profile) for profile in all_user_profiles
+                        ]
+
+                        response_data = {
+                            "ok": True,
+                            "users": users_data,
+                            "profiles": profiles_data,
+                        }
+                        return make_response(jsonify(response_data), 200)
+                    else:
+                        response_data = {"ok": False, "message": "User is not an admin"}
+                        return make_response(jsonify(response_data), 403)
+                else:
+                    response_data = {"ok": False, "message": "User profile not found"}
+                    return make_response(jsonify(response_data), 404)
+            else:
+                response_data = {"ok": False, "message": "User not found"}
+                return make_response(jsonify(response_data), 404)
+        except Exception as e:
+            response_data = {"ok": False, "message": str(e)}
+            return make_response(jsonify(response_data), 500)
+    else:
+        response_data = {"ok": False, "message": "User not found"}
+        return make_response(jsonify(response_data), 404)
+
+
+@app.route("/user/privileges/admin", methods=["POST"])
+@jwt_required()
+def add_remove_admin_privileges():
+    if request.is_json:
+        data = request.json
+        user_admin_found = get_jwt_identity()
+
+        user_admin = session.query(User).filter_by(username=user_admin_found).first()
+        user_admin_profile = (
+            session.query(Profile).filter_by(profile_id=user_admin.profile_id).first()
+        )
+
+        if user_admin_profile and user_admin_profile.is_admin:
+            user_in_moderation = (
+                session.query(User).filter_by(user_id=data["user_id"]).first()
+            )
+
+            if user_in_moderation:
+                user_in_moderation_profile = (
+                    session.query(Profile)
+                    .filter_by(profile_id=user_in_moderation.profile_id)
+                    .first()
+                )
+
+                if user_in_moderation_profile:
+                    user_in_moderation_profile.is_admin = (
+                        not user_in_moderation_profile.is_admin
+                    )
+                    session.commit()
+
+                    response_data = {
+                        "ok": True,
+                        "message": "Profile updated",
+                        "user_profile": obj_to_dict(user_in_moderation_profile),
+                    }
+                else:
+                    response_data = {
+                        "ok": False,
+                        "message": "User in moderation profile not found",
+                    }
+            else:
+                response_data = {"ok": False, "message": "User in moderation not found"}
+        else:
+            response_data = {
+                "ok": False,
+                "message": "User does not have admin privileges",
+            }
+
+        return make_response(jsonify(response_data), 200)
+    else:
+        response_data = {"ok": False, "error": "Request must contain JSON data"}
+        return make_response(jsonify(response_data), 400)
+
+
+@app.route("/user/privileges/delete", methods=["POST"])
+@jwt_required()
+def delete_user():
+    if request.is_json:
+        data = request.json
+        user_admin_found = get_jwt_identity()
+
+        if user_admin_found:
+            user_admin = (
+                session.query(User).filter_by(username=user_admin_found).first()
+            )
+            user_admin_profile = (
+                session.query(Profile)
+                .filter_by(profile_id=user_admin.profile_id)
+                .first()
+            )
+
+            if user_admin_profile and user_admin_profile.is_admin:
+                user_to_delete = (
+                    session.query(User).filter_by(user_id=data["user_id"]).first()
+                )
+
+                if user_to_delete:
+                    session.delete(user_to_delete)
+                    session.commit()
+
+                    response_data = {
+                        "ok": True,
+                        "message": "User deleted successfully",
+                    }
+                    return make_response(jsonify(response_data), 200)
+                else:
+                    response_data = {
+                        "ok": False,
+                        "message": "User to delete not found",
+                    }
+                    return make_response(jsonify(response_data), 404)
+            else:
+                response_data = {
+                    "ok": False,
+                    "message": "User does not have admin privileges",
+                }
+                return make_response(jsonify(response_data), 403)
         else:
             response_data = {"ok": False, "message": "User not found"}
             return make_response(jsonify(response_data), 404)
