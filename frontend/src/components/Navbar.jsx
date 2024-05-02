@@ -1,14 +1,10 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../App';
 import { AppBar, Toolbar, IconButton, Typography, Menu, Container, Avatar, Button, Tooltip, MenuItem, Box, Switch, useTheme, Divider } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import SideDrawer from './SideDrawer';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
-import Metrics from '../services/metrics';
 import UserContext from '../context/user'
 import useFetch from '../hooks/useFetch';
 
@@ -17,6 +13,7 @@ const Navbar = (props) => {
     const theme = useTheme();
     const fetchData = useFetch();
     const settings = ['Profile', 'Logout'];
+    const settingsAdmin = ['Admin', 'Profile', 'Logout'];
     const settingsNotSignedIn = ['Login'];
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [drawerList, setDrawerList] = useState(["myDashboard", "myComposition", "myCalories", "myWorkout"]);
@@ -49,6 +46,9 @@ const Navbar = (props) => {
             case "Profile":
                 navigate('/profile');
                 break;
+            case "Admin":
+                navigate('/admin');
+                break;
         }
     }
 
@@ -57,10 +57,9 @@ const Navbar = (props) => {
 
         if (res.ok) {
             localStorage.removeItem('accessToken');
-
-            userCtx.setAccessToken("");
             userCtx.setIsSignedIn(false);
             userCtx.setShowLogin(true);
+            userCtx.setUserProfile({});
             navigate('/');
         } else {
             console.error("Logout Failed");
@@ -98,21 +97,8 @@ const Navbar = (props) => {
                 <Divider orientation='horizontal' variant='middle' flexItem sx={{ backgroundColor: theme.palette.text.primary, borderBottomWidth: "1px" }} />
 
                 <Toolbar disableGutters sx={{ padding: "0 1rem 0 1rem", display: "flex", justifyContent: "flex-end" }}>
-                    {/* <IconButton sx={{ mr: 2, display: { lg: "none", md: "flex", xs: "flex" }, color: theme.palette.text.primary }} size="large" onClick={() => handleToggleDrawer(true)}>
-                        {openDrawer ? <MenuOpenIcon /> : <MenuIcon />}
-                    </IconButton> */}
-
-                    {/* <SideDrawer
-                        openDrawer={openDrawer}
-                        setOpenDrawer={setOpenDrawer}
-                        drawerList={drawerList}
-                        setDrawerList={setDrawerList}
-                        handleToggleDrawer={handleToggleDrawer}>
-                    </SideDrawer> */}
-
-
                     {userCtx.isUserSignedIn() && (
-                        <Box sx={{ display: "flex", justifyContent: "space-evenly", flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-evenly", flexGrow: 1 }}>
                             {drawerList.map((page) => (
                                 <Button
                                     key={page}
@@ -149,7 +135,7 @@ const Navbar = (props) => {
                             <>
                                 {userCtx.isUserSignedIn() && (
                                     <Tooltip title="User Profile">
-                                        <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                                        <IconButton onClick={(e) => { handleOpenUserMenu(e) }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                             <Avatar src={"data:image/jpeg;base64," + userCtx.userProfile.profile_photo} alt="User Avatar" sx={{ backgroundColor: theme.palette.primary.avatar, color: theme.palette.text.primary }} />
                                         </IconButton>
                                     </Tooltip>
@@ -157,7 +143,7 @@ const Navbar = (props) => {
 
                                 {!userCtx.isUserSignedIn() && (
                                     <Tooltip title="Not signed in">
-                                        <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
+                                        <IconButton onClick={(e) => { handleOpenUserMenu(e) }} sx={{ p: 0, color: theme.palette.primary.contrastText }}>
                                             <Avatar alt="User Avatar" sx={{ backgroundColor: theme.palette.primary.avatar, color: theme.palette.text.primary }} />
                                         </IconButton>
                                     </Tooltip>
@@ -179,13 +165,23 @@ const Navbar = (props) => {
                                     open={Boolean(anchorElUser)}
                                     onClose={handleCloseUserMenu}
                                 >
-                                    {settings.map((setting) => (
+                                    {userCtx.userProfile.is_admin && settingsAdmin.map((setting) => (
+                                        <MenuItem key={setting} onClick={() => handleMenuItemClick(setting)}>
+                                            <Typography
+                                                textAlign="center"
+                                                color={setting == 'Admin' ? 'red' : theme.palette.text.primary}>
+                                                {setting}
+                                            </Typography>
+                                        </MenuItem>
+                                    ))}
+                                    {!userCtx.userProfile.is_admin && settings.map((setting) => (
                                         <MenuItem key={setting} onClick={() => handleMenuItemClick(setting)}>
                                             <Typography textAlign="center" color={theme.palette.text.dark}>
                                                 {setting}
                                             </Typography>
                                         </MenuItem>
                                     ))}
+
                                 </Menu></>
                         )}
 

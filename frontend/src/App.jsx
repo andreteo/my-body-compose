@@ -11,13 +11,13 @@ import UserContext from "./context/user";
 import UserProfile from "./components/UserProfile";
 import Workout from "./components/Workout";
 import useFetch from './hooks/useFetch';
+import AdminPage from "./components/AdminPage";
 
 export const ThemeContext = React.createContext();
 
 function App() {
   const [darkMode, setDarkMode] = useState(false); // Dark mode toggle state
   const [theme, setTheme] = useState(lightTheme);  // Theme state
-  const [accessToken, setAccessToken] = useState("");  // Access token state (TODO: shift this to local storage or DB?)
   const [role, setRole] = useState("");  //  User roles (User/Admin)
   const [showLogin, setShowLogin] = useState(true);  // Show login component state
   const [userProfile, setUserProfile] = useState({});  // User profile state
@@ -33,12 +33,6 @@ function App() {
     snackbarMessage: snackbarMessage,
     setSnackbarMessage: setSnackbarMessage
   }
-
-
-  //  Update isSignedIn state based on accessToken length
-  // useEffect(() => {
-  //   isUserSignedIn() ? setIsSignedIn(true) : setIsSignedIn(false);
-  // }, [accessToken.length]);
 
   // Toggle between light and dark theme
   useEffect(() => {
@@ -69,7 +63,7 @@ function App() {
 
   const getUserProfile = async () => {
     const login = await fetchData("/user/profile", "GET", undefined, localStorage.getItem('accessToken'));
-    const res = login.data
+    const res = login.data;
 
     if (res.ok) {
       const user_profile = res.user_profile;
@@ -79,11 +73,18 @@ function App() {
     }
   }
 
+  const getRefreshToken = async () => {
+    const refresh = await fetchData("/auth/refresh", "GET", undefined, localStorage.getItem('accessToken'));
+    const res = refresh.data;
+
+    if (res.ok) {
+      storeAccessTokenInLocalStorage(res.token);
+    }
+  }
+
   return (
     <UserContext.Provider
       value={{
-        accessToken,
-        setAccessToken,
         role,
         setRole,
         userProfile,
@@ -94,7 +95,8 @@ function App() {
         setShowLogin,
         storeAccessTokenInLocalStorage,
         getAccessTokenFromLocalStorage,
-        isUserSignedIn
+        isUserSignedIn,
+        getRefreshToken
       }}
     >
       <BrowserRouter>
@@ -112,6 +114,7 @@ function App() {
                     <Route path="/composition" element={<BodyComposition />} />
                     <Route path="/workout" element={<Workout />} />
                     <Route path="/profile" element={<UserProfile snackbarOperations={snackbarOperations} />} />
+                    {userProfile.is_admin && <Route path="/admin" element={<AdminPage snackbarOperations={snackbarOperations} />} />}
                   </>
                 )}
 

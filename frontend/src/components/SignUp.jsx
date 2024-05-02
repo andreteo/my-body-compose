@@ -30,7 +30,10 @@ const SignUp = (props) => {
         "weight": "",
         "phone_number": "",
         "profile_photo": "",
-        "bio": ""
+        "bio": "",
+        "calorie_goal": "",
+        "water_goal": "",
+        "weight_goal": ""
     });
     const [upload, setUpload] = useState(true);
     const [photoUpload, setPhotoUpload] = useState(null);
@@ -63,7 +66,10 @@ const SignUp = (props) => {
             "height": generateRandomHeight(),
             "weight": generateRandomWeight(),
             "phone_number": faker.phone.number(),
-            "bio": "Placeholder"
+            "bio": "Placeholder",
+            "calorie_goal": 2000,
+            "water_goal": 2000,
+            "weight_goal": 50
         })
     }
 
@@ -74,37 +80,6 @@ const SignUp = (props) => {
             [name]: value
         }));
     };
-
-    // const handlePhotoUpload = async () => {
-    //     const dataUrl = userRegistrationState.profile_photo;
-    //     const blob = await (await fetch(dataUrl)).blob();
-    //     const file = new File([blob], "profile_photo.png", { type: "image/png" });
-
-    //     const formData = new FormData();
-    //     formData.append('profile_photo', file, file.name);
-
-    //     try {
-    //         const res = await fetch(
-    //             import.meta.env.VITE_BACKEND_SERVER + "/auth/register",
-    //             {
-    //                 method: "POST",
-    //                 body: formData,
-    //             }
-    //         );
-    //     } catch (error) {
-    //         console.error('Error uploading image', error);
-    //     }
-
-    //     // const temp = { ...userRegistrationState };
-    //     // temp.profile_photo = photoUpload;
-    //     // setUserRegistrationState(temp);
-    // }
-
-    // useEffect(() => {
-    //     if (photoUpload) {
-    //         handlePhotoUpload();
-    //     }
-    // }, [photoUpload])
 
     const handleSubmit = async (event) => {
         event.preventDefault();

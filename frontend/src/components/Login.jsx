@@ -34,7 +34,6 @@ const Login = (props) => {
 
             userCtx.storeAccessTokenInLocalStorage(data.token);
 
-            userCtx.setAccessToken(data.token)
             userCtx.setUserProfile(data.user_profile);
 
             navigate('/');
