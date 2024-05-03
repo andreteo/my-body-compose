@@ -141,7 +141,7 @@ const Dashboard = (props) => {
                                     {/* before_photo and after_photo exists, render them */}
                                     {v && (
                                         <ImageListItem key={'listitem' + idx}>
-                                            <img src={"data:image/jpeg;base64," + v} loading='lazy' />
+                                            <img src={"data:image/jpeg;base64," + v} loading='lazy' style={{ 'borderRadius': 20 }} />
                                             {k == "before_photo" && (
                                                 <ImageListItemBar
                                                     alt="before image"
