@@ -17,6 +17,11 @@ MyBodyCompose targets individuals seeking to improve their health and wellness. 
 ## Screenshots
 
 <figure>
+      <img src="./docs/entity-relationship-diagram.png" alt="Entity Relationship Diagram">
+      <figcaption>Entity Relationship Diagram</figcaption>
+</figure>
+
+<figure>
       <img src="./docs/screenshots/loginlight.png" alt="Login Page (Light Mode)">
       <figcaption>Login Page (Light Mode)</figcaption>
 </figure>
@@ -75,7 +80,7 @@ cd my-body-compose
     - `cd frontend`
     - `npm i`
     - create a .env file and include the following: `VITE_BACKEND_SERVER=http://127.0.0.1:<PORT>`
-    - Start frontend: `npm start`.
+    - Start frontend: `npm run dev`.
 4. Install and Connect to PostgreSQL database
     - From your terminal, open a PSQL shell: `psql postgres`.
     - List all databases: `\l`.
